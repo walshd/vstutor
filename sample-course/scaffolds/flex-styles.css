@@ -1,0 +1,39 @@
+/* Base styles — do not change these */
+div, p {
+    border: 1px solid red;
+}
+
+div {
+    margin: 5px;
+    width: 50px;
+    height: 200px;
+}
+
+/* ============================================================
+   Task 1 — Add display: flex to the section element below.
+   ============================================================ */
+
+section {
+    display: flex;
+}
+
+/* ============================================================
+   Task 2 — Add justify-content: space-around to section below.
+   ============================================================ */
+
+section {
+    display: flex;
+    justify-content: space-around;
+}
+
+/* ============================================================
+   Task 3 — Add align-items: center to section below.
+   (You'll also need to give section a height — try height: 300px)
+   ============================================================ */
+
+section {
+    display: flex;
+    justify-content: space-around;
+    height: 300px;
+    align-items: center;
+}

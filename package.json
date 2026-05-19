@@ -1,0 +1,47 @@
+{
+  "name": "vscode-tutor",
+  "displayName": "VSCode Tutor",
+  "description": "In-editor coding lessons with scaffolded exercises — learn to code in a real IDE, not a browser sandbox.",
+  "version": "0.1.0",
+  "publisher": "walshd",
+  "author": {
+    "name": "David Walsh",
+    "email": "walshd@edgehill.ac.uk"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/walshd/vstutor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/walshd/vstutor/issues"
+  },
+  "homepage": "https://github.com/walshd/vstutor#readme",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Education"],
+  "keywords": ["education", "tutorial", "learning", "python", "css", "teaching"],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscodetutor.openLesson",
+        "title": "Tutor: Open Lesson"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.0.0",
+    "typescript": "^5.3.0"
+  }
+}

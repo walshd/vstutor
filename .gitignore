@@ -1,0 +1,9 @@
+out/
+node_modules/
+*.vsix
+.DS_Store
+.claude/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+*.pyc

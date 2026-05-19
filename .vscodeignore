@@ -1,0 +1,13 @@
+.vscode/**
+.claude/**
+src/**
+node_modules/**
+out/test/**
+tsconfig.json
+.gitignore
+**/*.map
+**/*.ts
+**/.mypy_cache/**
+**/.pytest_cache/**
+**/__pycache__/**
+!out/**/*.js

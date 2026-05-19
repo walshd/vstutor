@@ -1,0 +1,26 @@
+/* ============================================================
+   Task 1 — Add the base styles below this line.
+   Give div and p a border, and give div a fixed width, height, and margin.
+   ============================================================ */
+
+div, p {
+    border: 1px solid red;
+}
+
+div {
+    margin: 5px;
+    width: 50px;
+    height: 200px;
+}
+
+/* ============================================================
+   Task 3 — Add the .left and .right float rules below this line.
+   ============================================================ */
+
+.left {
+    float: left;
+}
+
+.right {
+    float: right;
+}

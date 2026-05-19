@@ -1,0 +1,32 @@
+nav {
+    border: 5px solid #000000;
+    /* ============================================================
+       Task 1 — Add display: flex here to make nav a flex container.
+       ============================================================ */
+    display: flex;
+    justify-content: space-around;
+    height: 80px;
+    align-items: center;
+      }
+
+nav > p {
+    padding: 10px;
+    text-align: center;
+    font-size: 2em;
+    color: #ffffff;
+}
+
+nav > p:nth-child(1) { background-color: #000099; }
+nav > p:nth-child(2) { background-color: #990000; }
+nav > p:nth-child(3) { background-color: #009900; }
+
+/* ============================================================
+   Task 2 — Add justify-content: space-around to the nav rule above,
+   OR add a new nav rule below with that property.
+   ============================================================ */
+
+
+/* ============================================================
+   Task 3 — Give nav a height (try 80px) and add align-items: center
+   so the text is vertically centred in the bar.
+   ============================================================ */
