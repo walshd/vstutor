@@ -352,7 +352,9 @@ function buildHtml(
   <script src="${prismCssLUri}"></script>
   <script src="${prismHtmlUri}"></script>
   <script nonce="${nonce}">
+    if ('scrollRestoration' in history) { history.scrollRestoration = 'manual'; }
     window.scrollTo(0, 0);
+    requestAnimationFrame(() => window.scrollTo(0, 0));
     Prism.highlightAll();
     const vscode = acquireVsCodeApi();
 
