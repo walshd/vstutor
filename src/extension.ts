@@ -85,11 +85,22 @@ export function activate(context: vscode.ExtensionContext): void {
             return;
         }
 
-        const items = visiblePaths.map(p => ({
-            label: path.basename(p, '.md'),
-            description: path.relative(workspaceRoot, p),
-            fsPath: p,
-        }));
+        const lastLesson = context.workspaceState.get<string>('lastLesson');
+
+        const items = visiblePaths.map(p => {
+            const isLast = p === lastLesson;
+            return {
+                label: (isLast ? '$(history) ' : '') + path.basename(p, '.md'),
+                description: isLast ? 'resume here' : '',
+                fsPath: p,
+            };
+        });
+
+        // Sort last-opened lesson to the top
+        if (lastLesson && visiblePaths.includes(lastLesson)) {
+            const idx = items.findIndex(i => i.fsPath === lastLesson);
+            if (idx > 0) { items.unshift(...items.splice(idx, 1)); }
+        }
 
         // Show locked lessons as disabled separators so students know more are coming
         if (lockedPaths.length > 0) {
@@ -105,6 +116,7 @@ export function activate(context: vscode.ExtensionContext): void {
         });
 
         if (pick?.fsPath) {
+            context.workspaceState.update('lastLesson', pick.fsPath);
             await openLesson(context, pick.fsPath, visiblePaths, workspaceRoot);
         }
     });

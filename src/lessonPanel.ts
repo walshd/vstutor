@@ -117,6 +117,7 @@ export class LessonPanel {
         if (idx === -1 || next < 0 || next >= this._allLessonPaths.length) { return; }
 
         const nextPath = this._allLessonPaths[next];
+        this._context.workspaceState.update('lastLesson', nextPath);
         this._load(nextPath);
 
         try {
@@ -351,6 +352,7 @@ function buildHtml(
   <script src="${prismCssLUri}"></script>
   <script src="${prismHtmlUri}"></script>
   <script nonce="${nonce}">
+    window.scrollTo(0, 0);
     Prism.highlightAll();
     const vscode = acquireVsCodeApi();
 
