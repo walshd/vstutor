@@ -125,6 +125,10 @@ export async function openLesson(
             const scaffoldPath = path.join(workspaceRoot, firstScaffold.scaffoldFile);
             const doc = await vscode.workspace.openTextDocument(scaffoldPath);
             await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        } else {
+            // No scaffold file — open an empty editor so the lesson panel opens beside it
+            const doc = await vscode.workspace.openTextDocument({ content: '', language: lesson.language });
+            await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
         }
     } catch (err) {
         console.warn('VSCode Tutor: could not pre-open scaffold:', err);

@@ -126,6 +126,10 @@ export class LessonPanel {
                 vscode.workspace.openTextDocument(scaffoldPath).then(doc =>
                     vscode.window.showTextDocument(doc, vscode.ViewColumn.One)
                 );
+            } else {
+                vscode.workspace.openTextDocument({ content: '', language: this._lesson.language }).then(doc =>
+                    vscode.window.showTextDocument(doc, vscode.ViewColumn.One)
+                );
             }
         } catch { /* scaffold may not exist */ }
     }
