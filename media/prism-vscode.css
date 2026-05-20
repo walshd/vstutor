@@ -1,0 +1,144 @@
+/* VSCode Dark+ colour theme for Prism.js */
+
+code[class*="language-"],
+pre[class*="language-"] {
+    color: #d4d4d4;
+    background: none;
+    font-family: var(--vscode-editor-font-family, 'Consolas', 'Courier New', monospace);
+    font-size: 1em;
+    text-align: left;
+    white-space: pre;
+    word-spacing: normal;
+    word-break: normal;
+    word-wrap: normal;
+    tab-size: 4;
+    hyphens: none;
+}
+
+pre[class*="language-"] {
+    padding: 1em;
+    margin: .5em 0;
+    overflow: auto;
+    border-radius: 4px;
+    background: var(--vscode-textCodeBlock-background, #1e1e1e);
+}
+
+:not(pre) > code[class*="language-"] {
+    background: var(--vscode-textCodeBlock-background, #1e1e1e);
+    padding: .1em .3em;
+    border-radius: 3px;
+}
+
+/* Comments */
+.token.comment,
+.token.block-comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+    color: #6a9955;
+    font-style: italic;
+}
+
+/* Punctuation */
+.token.punctuation {
+    color: #d4d4d4;
+}
+
+/* Namespaces */
+.token.namespace {
+    opacity: .7;
+}
+
+/* Keywords */
+.token.keyword,
+.token.tag,
+.token.boolean,
+.token.important {
+    color: #569cd6;
+}
+
+/* Strings */
+.token.string,
+.token.char,
+.token.attr-value,
+.token.template-string {
+    color: #ce9178;
+}
+
+/* Interpolation within template strings */
+.token.interpolation-punctuation {
+    color: #569cd6;
+}
+
+/* Numbers */
+.token.number,
+.token.unit {
+    color: #b5cea8;
+}
+
+/* Functions */
+.token.function,
+.token.function-name,
+.token.method {
+    color: #dcdcaa;
+}
+
+/* Classes / types */
+.token.class-name,
+.token.type {
+    color: #4ec9b0;
+}
+
+/* Variables, parameters */
+.token.variable,
+.token.parameter,
+.token.property,
+.token.attr-name {
+    color: #9cdcfe;
+}
+
+/* Operators */
+.token.operator,
+.token.entity,
+.token.url {
+    color: #d4d4d4;
+}
+
+/* Regex */
+.token.regex {
+    color: #d16969;
+}
+
+/* Selectors (CSS) */
+.token.selector,
+.token.pseudo-class,
+.token.pseudo-element {
+    color: #d7ba7d;
+}
+
+/* Inserted / deleted (diff) */
+.token.inserted {
+    color: #b5cea8;
+}
+.token.deleted {
+    color: #f44747;
+}
+
+/* Decorators (Python) */
+.token.decorator {
+    color: #dcdcaa;
+}
+
+/* Built-in functions / constants */
+.token.builtin {
+    color: #4ec9b0;
+}
+
+/* HTML / XML tags */
+.token.tag .token.tag,
+.token.tag .token.punctuation {
+    color: #569cd6;
+}
+
+.token.italic { font-style: italic; }
+.token.bold { font-weight: bold; }

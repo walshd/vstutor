@@ -3,6 +3,12 @@ import * as path from 'path';
 import { Lesson, TaskDef, loadLesson } from './lessonLoader';
 import { runValidator } from './validator';
 
+interface RenderCtx {
+    webview: vscode.Webview;
+    lessonDir: string;
+    workspaceRoot: string;
+}
+
 export class LessonPanel {
     public static currentPanel: LessonPanel | undefined;
 
@@ -34,11 +40,18 @@ export class LessonPanel {
         }
 
         const lesson = loadLesson(lessonPath);
+
+        const roots: vscode.Uri[] = [vscode.Uri.joinPath(context.extensionUri, 'media')];
+        if (workspaceRoot) { roots.push(vscode.Uri.file(workspaceRoot)); }
+
         const panel = vscode.window.createWebviewPanel(
             'vscodetutor.lesson',
             `Lesson: ${lesson.title}`,
             column,
-            { enableScripts: true }
+            {
+                enableScripts: true,
+                localResourceRoots: roots,
+            }
         );
 
         LessonPanel.currentPanel = new LessonPanel(
@@ -77,7 +90,6 @@ export class LessonPanel {
                     );
                 } else if (msg.type === 'runValidator' && msg.command) {
                     const command: string = msg.command;
-                    // Auto-save all dirty editors before running tests
                     vscode.workspace.saveAll(false).then(() => {
                         runValidator(msg.taskId, command, workspaceRoot, result => {
                             this._panel.webview.postMessage({ type: 'validatorResult', ...result });
@@ -107,10 +119,8 @@ export class LessonPanel {
         const nextPath = this._allLessonPaths[next];
         this._load(nextPath);
 
-        // Open the new lesson's first scaffold file in column 1
         try {
-            const lesson = this._lesson;
-            const firstScaffold = lesson.tasks.find(t => t.scaffoldFile);
+            const firstScaffold = this._lesson.tasks.find(t => t.scaffoldFile);
             if (firstScaffold?.scaffoldFile) {
                 const scaffoldPath = path.join(this._workspaceRoot, firstScaffold.scaffoldFile);
                 vscode.workspace.openTextDocument(scaffoldPath).then(doc =>
@@ -126,7 +136,14 @@ export class LessonPanel {
             ? path.basename(this._allLessonPaths[idx - 1], '.md') : undefined;
         const nextTitle = idx !== -1 && idx < this._allLessonPaths.length - 1
             ? path.basename(this._allLessonPaths[idx + 1], '.md') : undefined;
-        this._panel.webview.html = buildHtml(this._lesson, this._panel.webview, prevTitle, nextTitle);
+        this._panel.webview.html = buildHtml(
+            this._lesson,
+            this._panel.webview,
+            prevTitle,
+            nextTitle,
+            this._context.extensionUri,
+            this._workspaceRoot
+        );
     }
 
     public dispose(): void {
@@ -139,12 +156,27 @@ export class LessonPanel {
 
 // ── HTML generation ──────────────────────────────────────────────────────────
 
-function buildHtml(lesson: Lesson, webview: vscode.Webview, prevTitle?: string, nextTitle?: string): string {
+function buildHtml(
+    lesson: Lesson,
+    webview: vscode.Webview,
+    prevTitle: string | undefined,
+    nextTitle: string | undefined,
+    extensionUri: vscode.Uri,
+    workspaceRoot: string
+): string {
     const nonce = getNonce();
     const csp = webview.cspSource;
 
-    const bodyHtml = renderMarkdown(lesson.body);
-    const tasksHtml = lesson.tasks.map(renderTaskCard).join('\n');
+    const prismCssUri  = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'prism-vscode.css'));
+    const prismJsUri   = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'prism.js'));
+    const prismPyUri   = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'prism-python.min.js'));
+    const prismCssLUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'prism-css.min.js'));
+    const prismHtmlUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'prism-markup.min.js'));
+
+    const ctx: RenderCtx = { webview, lessonDir: lesson.lessonDir, workspaceRoot };
+    const bodyHtml  = renderMarkdown(lesson.body, ctx);
+    const tasksHtml = lesson.tasks.map(t => renderTaskCard(t, ctx)).join('\n');
+
     const prevBtn = prevTitle
         ? `<button data-action="navigate" data-direction="prev" class="nav-btn">&#8592; ${esc(prevTitle)}</button>`
         : `<span></span>`;
@@ -157,9 +189,15 @@ function buildHtml(lesson: Lesson, webview: vscode.Webview, prevTitle?: string, 
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'none'; style-src ${csp} 'unsafe-inline'; script-src 'nonce-${nonce}';">
+        content="default-src 'none';
+                 style-src ${csp} 'unsafe-inline';
+                 script-src 'nonce-${nonce}' ${csp};
+                 img-src ${csp} https: data:;
+                 media-src ${csp};
+                 frame-src https://www.youtube-nocookie.com https://www.youtube.com;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${esc(lesson.title)}</title>
+  <link rel="stylesheet" href="${prismCssUri}">
   <style>
     body {
       font-family: var(--vscode-font-family);
@@ -167,16 +205,30 @@ function buildHtml(lesson: Lesson, webview: vscode.Webview, prevTitle?: string, 
       color: var(--vscode-foreground);
       background: var(--vscode-editor-background);
       padding: 0 2rem 4rem;
-      max-width: 780px;
+      max-width: 800px;
       margin: 0 auto;
-      line-height: 1.65;
+      line-height: 1.7;
     }
     h1 {
       color: var(--vscode-textLink-activeForeground);
       border-bottom: 1px solid var(--vscode-panel-border);
       padding-bottom: .4rem;
+      margin-top: 1.5rem;
     }
-    h2 { color: var(--vscode-textLink-foreground); margin-top: 1.8rem; }
+    h2 { color: var(--vscode-textLink-foreground); margin-top: 2rem; }
+    h3 { color: var(--vscode-foreground); margin-top: 1.5rem; font-size: 1.05em; }
+    h4, h5 { color: var(--vscode-descriptionForeground); margin-top: 1.2rem; font-size: 1em; }
+    p { margin: .7rem 0; }
+    a { color: var(--vscode-textLink-foreground); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    blockquote {
+      border-left: 3px solid var(--vscode-textBlockQuote-border, #569cd6);
+      background: var(--vscode-textBlockQuote-background, rgba(86,156,214,.08));
+      margin: 1rem 0;
+      padding: .5rem 1rem;
+      border-radius: 0 4px 4px 0;
+    }
+    blockquote p { margin: 0; }
     code {
       font-family: var(--vscode-editor-font-family);
       background: var(--vscode-textCodeBlock-background);
@@ -189,10 +241,38 @@ function buildHtml(lesson: Lesson, webview: vscode.Webview, prevTitle?: string, 
       padding: 1rem;
       border-radius: 4px;
       overflow-x: auto;
+      margin: 1rem 0;
     }
     pre code { background: none; padding: 0; font-size: 1em; }
-    ul { padding-left: 1.4rem; }
+    ul, ol { padding-left: 1.4rem; margin: .5rem 0; }
     li { margin: .3rem 0; }
+    img.media-full {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      display: block;
+      margin: 1rem 0;
+    }
+    video.media-full {
+      max-width: 100%;
+      border-radius: 4px;
+      display: block;
+      margin: 1rem 0;
+    }
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
+    .video-container iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: 0;
+    }
     .task-card {
       border: 1px solid var(--vscode-panel-border);
       border-radius: 6px;
@@ -262,7 +342,12 @@ function buildHtml(lesson: Lesson, webview: vscode.Webview, prevTitle?: string, 
   ${bodyHtml}
   ${tasksHtml}
   <div class="lesson-nav">${prevBtn}${nextBtn}</div>
+  <script src="${prismJsUri}"></script>
+  <script src="${prismPyUri}"></script>
+  <script src="${prismCssLUri}"></script>
+  <script src="${prismHtmlUri}"></script>
   <script nonce="${nonce}">
+    Prism.highlightAll();
     const vscode = acquireVsCodeApi();
 
     // Single delegated listener — onclick attrs are blocked by CSP nonce policy
@@ -304,9 +389,8 @@ function buildHtml(lesson: Lesson, webview: vscode.Webview, prevTitle?: string, 
 </html>`;
 }
 
-function renderTaskCard(task: TaskDef): string {
-    const desc = renderMarkdown(task.description);
-    // onclick attributes are blocked by CSP — use data-* attributes and event delegation instead
+function renderTaskCard(task: TaskDef, ctx: RenderCtx): string {
+    const desc = renderMarkdown(task.description, ctx);
     const scaffoldBtn = task.scaffoldFile
         ? `<button class="secondary" data-action="openScaffold" data-task="${esc(task.id)}" data-file="${esc(task.scaffoldFile)}">Open scaffold</button>`
         : '';
@@ -324,23 +408,31 @@ function renderTaskCard(task: TaskDef): string {
 </div>`;
 }
 
-// ── Minimal markdown renderer ────────────────────────────────────────────────
+// ── Markdown renderer ────────────────────────────────────────────────────────
 
-function renderMarkdown(md: string): string {
+function renderMarkdown(md: string, ctx: RenderCtx): string {
     let html = '';
     const lines = md.split('\n');
     let i = 0;
     let inList = false;
+    let paraLines: string[] = [];
 
     const flushList = () => { if (inList) { html += '</ul>\n'; inList = false; } };
+    const flushPara = () => {
+        if (paraLines.length) {
+            html += `<p>${paraLines.map(l => inline(l, ctx)).join(' ')}</p>\n`;
+            paraLines = [];
+        }
+    };
+    const flush = () => { flushPara(); flushList(); };
 
     while (i < lines.length) {
         const line = lines[i];
 
         // fenced code block
         if (line.startsWith('```')) {
-            flushList();
-            const lang = line.slice(3).trim();
+            flush();
+            const lang = line.slice(3).trim() || 'text';
             const code: string[] = [];
             i++;
             while (i < lines.length && !lines[i].startsWith('```')) { code.push(lines[i]); i++; }
@@ -350,46 +442,107 @@ function renderMarkdown(md: string): string {
         }
 
         // heading
-        const hm = line.match(/^(#{1,4})\s+(.*)/);
+        const hm = line.match(/^(#{1,5})\s+(.*)/);
         if (hm) {
-            flushList();
-            html += `<h${hm[1].length}>${inline(hm[2])}</h${hm[1].length}>\n`;
+            flush();
+            html += `<h${hm[1].length}>${inline(hm[2], ctx)}</h${hm[1].length}>\n`;
+            i++; continue;
+        }
+
+        // blockquote
+        if (line.startsWith('> ')) {
+            flush();
+            html += `<blockquote><p>${inline(line.slice(2), ctx)}</p></blockquote>\n`;
+            i++; continue;
+        }
+
+        // standalone image / video line
+        const mediaMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/);
+        if (mediaMatch) {
+            flush();
+            html += renderMedia(mediaMatch[1], mediaMatch[2], ctx);
             i++; continue;
         }
 
         // list item
         if (/^[-*]\s+/.test(line)) {
+            flushPara();
             if (!inList) { html += '<ul>\n'; inList = true; }
-            html += `<li>${inline(line.replace(/^[-*]\s+/, ''))}</li>\n`;
+            html += `<li>${inline(line.replace(/^[-*]\s+/, ''), ctx)}</li>\n`;
             i++; continue;
         }
 
         // blank line
-        if (line.trim() === '') { flushList(); i++; continue; }
+        if (line.trim() === '') { flush(); i++; continue; }
 
-        // paragraph
+        // accumulate paragraph lines (flush list, not para)
         flushList();
-        html += `<p>${inline(line)}</p>\n`;
+        paraLines.push(line);
         i++;
     }
-    flushList();
+    flush();
     return html;
 }
 
-function inline(s: string): string {
+function renderMedia(alt: string, src: string, ctx: RenderCtx): string {
+    // YouTube embed
+    const ytId = extractYouTubeId(src);
+    if (ytId) {
+        return `<div class="video-container"><iframe src="https://www.youtube-nocookie.com/embed/${esc(ytId)}" allowfullscreen title="${esc(alt)}"></iframe></div>\n`;
+    }
+
+    // Local video file
+    if (/\.(mp4|webm|ogv)$/i.test(src)) {
+        const mime = src.match(/\.(\w+)$/i)?.[1]?.toLowerCase() ?? 'mp4';
+        const mimeMap: Record<string, string> = { mp4: 'video/mp4', webm: 'video/webm', ogv: 'video/ogg' };
+        const uri = resolveLocalUri(src, ctx);
+        return `<video controls class="media-full"><source src="${uri}" type="${mimeMap[mime] ?? 'video/mp4'}"><p>${esc(alt)}</p></video>\n`;
+    }
+
+    // External image (https://)
+    if (src.startsWith('https://') || src.startsWith('http://')) {
+        return `<img src="${esc(src)}" alt="${esc(alt)}" class="media-full">\n`;
+    }
+
+    // Local image — resolve relative to lesson directory
+    const uri = resolveLocalUri(src, ctx);
+    return `<img src="${uri}" alt="${esc(alt)}" class="media-full">\n`;
+}
+
+function resolveLocalUri(src: string, ctx: RenderCtx): string {
+    const abs = path.isAbsolute(src) ? src : path.join(ctx.lessonDir, src);
+    return ctx.webview.asWebviewUri(vscode.Uri.file(abs)).toString();
+}
+
+function extractYouTubeId(url: string): string | null {
+    const patterns = [
+        /[?&]v=([a-zA-Z0-9_-]{11})/,
+        /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+        /embed\/([a-zA-Z0-9_-]{11})/,
+    ];
+    for (const p of patterns) {
+        const m = url.match(p);
+        if (m) { return m[1]; }
+    }
+    return null;
+}
+
+function inline(s: string, _ctx?: RenderCtx): string {
     return escText(s)
         .replace(/`([^`]+)`/g, '<code>$1</code>')
         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+            (_, text, href) => `<a href="${esc(href)}" target="_blank">${text}</a>`);
 }
 
-// escapes for HTML attribute context (quotes, angle brackets, ampersands)
+// escapes for HTML attribute context
 function esc(s: string): string {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// escapes for HTML text content (no quote escaping needed but safe to include)
+// escapes for HTML text content
 function escText(s: string): string {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
