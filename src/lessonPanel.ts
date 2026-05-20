@@ -204,6 +204,7 @@ function buildHtml(
   <title>${esc(lesson.title)}</title>
   <link rel="stylesheet" href="${prismCssUri}">
   <style>
+    * { user-select: none; -webkit-user-select: none; }
     body {
       font-family: var(--vscode-font-family);
       font-size: var(--vscode-font-size);
@@ -355,6 +356,7 @@ function buildHtml(
     if ('scrollRestoration' in history) { history.scrollRestoration = 'manual'; }
     window.scrollTo(0, 0);
     requestAnimationFrame(() => window.scrollTo(0, 0));
+    document.addEventListener('contextmenu', e => e.preventDefault());
     Prism.highlightAll();
     const vscode = acquireVsCodeApi();
 
